@@ -11,6 +11,18 @@ db.exec(`
     date TEXT NOT NULL
   )
 `);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS customers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    phone TEXT,
+    type TEXT NOT NULL DEFAULT 'Customer',
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 const express = require('express');
 const cors = require('cors');
 
@@ -48,6 +60,132 @@ app.get('/api/transactions', (req, res) => {
   ).all();
 
   res.json({ success: true, data: transactions });
+});
+
+// Get all customers and leads
+app.get('/api/customers', (req, res) => {
+  const customers = db.prepare(
+    'SELECT * FROM customers ORDER BY id DESC'
+  ).all();
+
+  res.json({ success: true, data: customers });
+});
+
+// Add a customer or lead
+app.post('/api/customers', (req, res) => {
+  const { name, phone, type, notes } = req.body;
+
+  if (typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Customer name is required.',
+    });
+  }
+
+  if (!['Customer', 'Lead'].includes(type)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Type must be Customer or Lead.',
+    });
+  }
+
+  const result = db.prepare(`
+    INSERT INTO customers (name, phone, type, notes)
+    VALUES (?, ?, ?, ?)
+  `).run(
+    name.trim(),
+    typeof phone === 'string' ? phone.trim() : '',
+    type,
+    typeof notes === 'string' ? notes.trim() : ''
+  );
+
+  const customer = db.prepare(
+    'SELECT * FROM customers WHERE id = ?'
+  ).get(result.lastInsertRowid);
+
+  res.status(201).json({ success: true, data: customer });
+});
+
+
+// Update a customer or lead
+app.put('/api/customers/:id', (req, res) => {
+  const { name, phone, type, notes } = req.body;
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid customer ID.',
+    });
+  }
+
+  if (typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Customer name is required.',
+    });
+  }
+
+  if (!['Customer', 'Lead'].includes(type)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Type must be Customer or Lead.',
+    });
+  }
+
+  const result = db.prepare(`
+    UPDATE customers
+    SET name = ?, phone = ?, type = ?, notes = ?
+    WHERE id = ?
+  `).run(
+    name.trim(),
+    typeof phone === 'string' ? phone.trim() : '',
+    type,
+    typeof notes === 'string' ? notes.trim() : '',
+    id
+  );
+
+  if (result.changes === 0) {
+    return res.status(404).json({
+      success: false,
+      message: 'Customer not found.',
+    });
+  }
+
+  const customer = db.prepare(
+    'SELECT * FROM customers WHERE id = ?'
+  ).get(id);
+
+  res.json({ success: true, data: customer });
+});
+
+
+// Delete a customer or lead
+app.delete('/api/customers/:id', (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid customer ID.',
+    });
+  }
+
+  const result = db.prepare(
+    'DELETE FROM customers WHERE id = ?'
+  ).run(id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({
+      success: false,
+      message: 'Customer not found.',
+    });
+  }
+
+  res.json({
+    success: true,
+    message: 'Customer deleted successfully.',
+  });
 });
 
 

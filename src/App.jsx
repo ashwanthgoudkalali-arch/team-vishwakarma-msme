@@ -15,6 +15,14 @@ function App() {
 
 const [transactions, setTransactions] = useState([]);
 
+const [customers, setCustomers] = useState([]);
+const [customerName, setCustomerName] = useState('');
+const [customerPhone, setCustomerPhone] = useState('');
+const [customerType, setCustomerType] = useState('Customer');
+const [customerNotes, setCustomerNotes] = useState('');
+
+const [editingCustomerId, setEditingCustomerId] = useState(null);
+
 useEffect(() => {
   fetch(`${API_URL}/transactions`)
     .then((response) => {
@@ -29,10 +37,65 @@ useEffect(() => {
     });
 }, []);
 
+useEffect(() => {
+  fetch(`${API_URL}/customers`)
+    .then((response) => {
+      if (!response.ok) throw new Error('Failed to load customers');
+      return response.json();
+    })
+    .then((result) => {
+      setCustomers(result.data);
+    })
+    .catch((error) => {
+      console.error('Could not load customers:', error);
+    });
+}, []);
+
   const [showForm, setShowForm] = useState(false);
   const [type, setType] = useState('Sale');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
+
+
+async function addTransaction(event) {
+  event.preventDefault();
+
+  if (!title.trim() || !amount || Number(amount) <= 0) {
+    alert('Please enter a description and a valid amount.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/transactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type,
+        title: title.trim(),
+        category: type === 'Sale' ? 'Sales' : 'General',
+        amount: Number(amount),
+        date: new Date().toISOString().slice(0, 10),
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to save transaction.');
+    }
+
+    setTransactions((previous) => [result.data, ...previous]);
+    setTitle('');
+    setAmount('');
+    setType('Sale');
+    setShowForm(false);
+  } catch (error) {
+    alert(error.message || 'Could not connect to the backend.');
+  }
+}
+
 
   const sales = transactions
     .filter((item) => item.type === 'Sale')
@@ -49,38 +112,110 @@ useEffect(() => {
       maximumFractionDigits: 0,
     }).format(value);
 
-async function addTransaction(event) {
+
+async function addCustomer(event) {
   event.preventDefault();
 
-  if (!title.trim() || Number(amount) <= 0) return;
+  if (!customerName.trim()) return;
+
+  const isEditing = editingCustomerId !== null;
 
   try {
-    const response = await fetch(`${API_URL}/transactions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        type,
-        title: title.trim(),
-        amount: Number(amount),
-      }),
-    });
+    const response = await fetch(
+      isEditing
+        ? `${API_URL}/customers/${editingCustomerId}`
+        : `${API_URL}/customers`,
+      {
+        method: isEditing ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: customerName.trim(),
+          phone: customerPhone.trim(),
+          type: customerType,
+          notes: customerNotes.trim(),
+        }),
+      }
+    );
 
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Failed to save transaction');
+      throw new Error(result.message || 'Failed to save customer');
     }
 
-    setTransactions((previous) => [result.data, ...previous]);
-    setTitle('');
-    setAmount('');
-    setShowForm(false);
+    if (isEditing) {
+      setCustomers((previous) =>
+        previous.map((customer) =>
+          customer.id === result.data.id ? result.data : customer
+        )
+      );
+    } else {
+      setCustomers((previous) => [result.data, ...previous]);
+    }
+
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerType('Customer');
+    setCustomerNotes('');
+    setEditingCustomerId(null);
   } catch (error) {
     alert(error.message || 'Could not connect to the backend.');
   }
 }
+
+
+function startEditingCustomer(customer) {
+  setEditingCustomerId(customer.id);
+  setCustomerName(customer.name);
+  setCustomerPhone(customer.phone || '');
+  setCustomerType(customer.type);
+  setCustomerNotes(customer.notes || '');
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+}
+
+async function deleteCustomer(customerId) {
+  const confirmed = window.confirm(
+    'Are you sure you want to delete this customer or lead?'
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(
+      `${API_URL}/customers/${customerId}`,
+      { method: 'DELETE' }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to delete record');
+    }
+
+    setCustomers((previous) =>
+      previous.filter((customer) => customer.id !== customerId)
+    );
+
+    if (editingCustomerId === customerId) {
+      setEditingCustomerId(null);
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerType('Customer');
+      setCustomerNotes('');
+    }
+  } catch (error) {
+    alert(error.message || 'Could not connect to the backend.');
+  }
+}
+
+
+
   const navItems = [
     { name: 'Dashboard', icon: '◫' },
     { name: 'Transactions', icon: '↔' },
@@ -238,15 +373,103 @@ async function addTransaction(event) {
             </section>
           )}
 
-          {page === 'Customers & Leads' && (
-            <section className="stats-grid customer-grid">
-              <article className="stat-card"><div className="stat-top"><span>Customers</span><span className="stat-icon blue">♙</span></div><h2>24</h2><div className="stat-foot">Illustrative sample count</div></article>
-              <article className="stat-card"><div className="stat-top"><span>Potential leads</span><span className="stat-icon purple">✧</span></div><h2>8</h2><div className="stat-foot">Illustrative sample count</div></article>
-              <article className="stat-card"><div className="stat-top"><span>Follow-ups due</span><span className="stat-icon orange">◷</span></div><h2>3</h2><div className="stat-foot">Example reminders</div></article>
-              <article className="stat-card"><div className="stat-top"><span>Repeat customers</span><span className="stat-icon green">↻</span></div><h2>12</h2><div className="stat-foot">Illustrative sample count</div></article>
-              <article className="panel full-panel customer-message"><h3>Build customer relationships</h3><p>This section is ready for a customer and lead management form in the next step.</p></article>
-            </section>
-          )}
+          
+{page === 'Customers & Leads' && (
+  <section className="stats-grid customer-grid">
+    <article className="stat-card">
+      <div className="stat-top">
+        <span>Customers</span>
+        <span className="stat-icon blue">♙</span>
+      </div>
+      <h2>{customers.filter((item) => item.type === 'Customer').length}</h2>
+      <div className="stat-foot">Saved customer records</div>
+    </article>
+
+    <article className="stat-card">
+      <div className="stat-top">
+        <span>Potential leads</span>
+        <span className="stat-icon purple">✧</span>
+      </div>
+      <h2>{customers.filter((item) => item.type === 'Lead').length}</h2>
+      <div className="stat-foot">Potential customers</div>
+    </article>
+
+    <article className="panel full-panel customer-message">
+      <h3>Add a customer or lead</h3>
+
+      <form onSubmit={addCustomer} className="customer-form">
+        <input
+          value={customerName}
+          onChange={(event) => setCustomerName(event.target.value)}
+          placeholder="Name"
+          required
+        />
+
+        <input
+          value={customerPhone}
+          onChange={(event) => setCustomerPhone(event.target.value)}
+          placeholder="Phone (optional)"
+        />
+
+        <select
+          value={customerType}
+          onChange={(event) => setCustomerType(event.target.value)}
+        >
+          <option value="Customer">Customer</option>
+          <option value="Lead">Lead</option>
+        </select>
+
+        <textarea
+          value={customerNotes}
+          onChange={(event) => setCustomerNotes(event.target.value)}
+          placeholder="Notes (optional)"
+        />
+
+        <button type="submit">Save record</button>
+      </form>
+
+      <h3>Saved customers and leads</h3>
+
+      {customers.length === 0 ? (
+        <p>No records yet. Add your first customer or lead above.</p>
+      ) : (
+        <div className="customer-list">
+
+{customers.map((customer) => (
+  <article className="customer-row" key={customer.id}>
+    <div className="customer-info">
+      <strong>{customer.name}</strong>
+      <p>{customer.phone || 'No phone provided'}</p>
+
+      {customer.notes && <p>{customer.notes}</p>}
+    </div>
+
+    <div className="customer-actions">
+      <span className="customer-type">{customer.type}</span>
+
+      <button
+        type="button"
+        onClick={() => startEditingCustomer(customer)}
+      >
+        Edit
+      </button>
+
+      <button
+        type="button"
+        onClick={() => deleteCustomer(customer.id)}
+      >
+        Delete
+      </button>
+    </div>
+  </article>
+))}
+
+        </div>
+      )}
+    </article>
+  </section>
+)}
+
 
           {page === 'AI Recommendations' && (
             <section className="panel recommendations-panel">
