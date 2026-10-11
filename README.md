@@ -1,16 +1,72 @@
-# React + Vite
+# TEAM VISHVAKARMA
+## MSME Business Management Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A web-based business management platform designed to help Micro, Small, and Medium Enterprises (MSMEs) track transactions, manage customers and leads, monitor business performance, and receive growth recommendations.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Business Dashboard** — View sales, expenses, and net balance.
+- **Transaction Management** — Record and manage sales and expenses.
+- **Customer Management** — Maintain customer information.
+- **Lead Management** — Track prospective customers and their status.
+- **AI-Based Growth Recommendations** — Display recommendations to support business decisions.
 
-## React Compiler
+## Technology Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend:** React, Vite, JavaScript, CSS
+- **Backend:** Node.js, Express.js
+- **API:** REST API
+- **Database:** SQLite
 
-## Expanding the ESLint configuration
+## Team Members
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Ashwanthgoud Kalali
+2. Sakshika Velishala
+3. Charan Mahankalai
+4. Tejaswini Alladi
+
+## Getting Started
+
+### Prerequisites
+
+Install Node.js and npm before running the application.
+
+### Installation
+
+1. Clone this repository:
+
+   ```bash
+   git clone YOUR_REPOSITORY_URL
+   ```
+
+2. Open the project folder:
+
+   ```bash
+   cd YOUR_REPOSITORY_FOLDER
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+4. Follow the setup instructions in the `server` folder to install backend dependencies, configure SQLite, and start the API server.
+
+5. Start the frontend:
+
+   ```bash
+   npm run dev
+   ```
+
+6. Open the local URL displayed by Vite in your browser.
+
+**Note:** Backend setup commands and environment requirements may vary depending on the project's current configuration.
+
+## Project Purpose
+
+The goal of this project is to make everyday business tracking simpler for MSMEs by bringing key business activities into one platform.
+
+---
+
+**Developed by TEAM VISHVAKARMA for the TriCity AI Hackathon.**
